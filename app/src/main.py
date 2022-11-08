@@ -20,6 +20,7 @@ import asyncio
 import json
 import logging
 import signal
+import time
 
 from sdv.util.log import (  # type: ignore
     get_opentelemetry_log_factory,
@@ -34,6 +35,10 @@ logging.setLogRecordFactory(get_opentelemetry_log_factory())
 logging.basicConfig(format=get_opentelemetry_log_format())
 logging.getLogger().setLevel("DEBUG")
 logger = logging.getLogger(__name__)
+#file = open("app_data\appdata.txt", "w")
+file = open("test.txt", "w")
+#file.write("hello world")
+#file.flush()
 
 GET_SPEED_REQUEST_TOPIC = "sampleapp/getSpeed"
 GET_SPEED_RESPONSE_TOPIC = "sampleapp/getSpeed/response"
@@ -74,13 +79,20 @@ class SampleApp(VehicleApp):
         # The DatapointReply containes the values of all subscribed DataPoints of
         # the same callback.
         vehicle_speed = data.get(self.Vehicle.Speed).value
-
+        # Getting current time
+        current_time = int(round(time.time() * 1000))
+        
+        car_dictionary = {"speed" : vehicle_speed, "time_milliseconds" : current_time}
+        file.write("data = " + repr(car_dictionary) + "\n")
+        file.flush()
+        
         # Do anything with the received value.
         # Example:
         # - Publishes current speed to MQTT Topic (i.e. DATABROKER_SUBSCRIPTION_TOPIC).
+        # - Publishes current speed to MQTT Topic (i.e. DATABROKER_SUBSCRIPTION_TOPIC).
         await self.publish_mqtt_event(
             DATABROKER_SUBSCRIPTION_TOPIC,
-            json.dumps({"speed": vehicle_speed}),
+            json.dumps({"speed": vehicle_speed, "current time": current_time}),
         )
 
     @subscribe_topic(GET_SPEED_REQUEST_TOPIC)
@@ -98,7 +110,7 @@ class SampleApp(VehicleApp):
 
         # Getting current speed from VehicleDataBroker using the DataPoint getter.
         vehicle_speed = (await self.Vehicle.Speed.get()).value
-
+    
         # Do anything with the speed value.
         # Example:
         # - Publishe the vehicle speed to MQTT topic (i.e. GET_SPEED_RESPONSE_TOPIC).
@@ -128,3 +140,4 @@ LOOP = asyncio.get_event_loop()
 LOOP.add_signal_handler(signal.SIGTERM, LOOP.stop)
 LOOP.run_until_complete(main())
 LOOP.close()
+file.close()
